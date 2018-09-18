@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title >Video app</title>
+    <link rel="shortcut icon" href="./src/img/icons8-tv-show-filled-50.png" type="text/png">
+    <script src="main.js"></script>
+</head>
+<body>
+        <div class="container-wrap">
+            <div class="first-container bg-light shadow-lg mb-3 rounded">
+                <div id="video_wrap" class="mb-3">
+                    <video id="video" controls class="video-tag shadow-lg rounded">
+                        <source src="" id="source">
+                    </video>
+                </div>
+                <div class="chosen-movie-info bg-light shadow-lg rounded">
+                    <div>
+                        <h2 id="chosenTitle"></h2>
+                    </div>
+                    <div>
+                        <p><b>Movie director:</b></p>
+                        <p class="tabulate text-justify"  id="chosenDirector"></p>
+                        <p><b>Movie description:</b></p>
+                        <p class="tabulate text-justify"  id="chosenDescription"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="second-container bg-light shadow-lg rounded">
+                <template id="movies">
+                    <div class="template-item bg-light shadow-lg rounded">
+                        <div class="template-item-back"></div>
+                        <p class="template-item-title"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+</body>
+</html>
