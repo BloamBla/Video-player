@@ -7,6 +7,18 @@ let chosenMovie;
 let data = [];
 let links;
 
+function setData(someData) {
+    for (let i = 0; i < someData.length; i++) {
+        someData[i].id = 'item' + i;
+    }
+    data = someData;
+}
+
+function getData() {
+    return data;
+}
+
+
 function getMoviesData(url) {
     return new Promise(function (resolve, reject) {
         let linkData = new XMLHttpRequest();
@@ -14,7 +26,8 @@ function getMoviesData(url) {
         linkData.onreadystatechange = function () {
             if (linkData.readyState === 4) {
                 if (linkData.status === 200) {
-                    data = JSON.parse(linkData.responseText);
+                    setData(JSON.parse(linkData.responseText));
+                    data = getData();
                     resolve(data);
                 } else reject('error');
             }
@@ -45,55 +58,70 @@ function setMovie(movie) {
     links.chosenDescription.textContent = movie.description;
 }
 
-function setMoviesBlocks(templateLink, moviesData) {
+function setMoviesBlocks(moviesData) {
+    let templateLink = document.querySelector('#movies');
     for (let i = 0; i < moviesData.length; i++) {
         let movieInfo = moviesData[i];
         let clone = templateLink.content.cloneNode(true);
         let image = clone.querySelector('.template-item-back');
         let title = clone.querySelector('h5');
+        let wrap = clone.querySelector('.template-item');
         title.textContent = movieInfo.title;
         image.setAttribute('style', 'background: url(src/img/' + movieInfo.preview + ') no-repeat center; background-size: contain;');
+        wrap.setAttribute('id', movieInfo.id);
         templateLink.parentNode.appendChild(clone);
     }
-    let videoChoice = document.querySelectorAll('.template-item');
-    for (let i = 0; i < videoChoice.length; i++) {
-        videoChoice[i].onclick = function () {
-            changeMovie(videoChoice, i, chosenMovie, data);
+    let videoChoice = document.querySelector('#second-container');
+    videoChoice.onclick = function () {
+        let link = event.target;
+        let clickLink = event.target;
+        data = getData();
+        if (link.attributes.id) {
+            if (link.attributes.id.value !== 'second-container') {
+                for (let i = 0; i < data.length; i++) {
+                    if (link.attributes.id.value === data[i].id) {
+                        chosenMovie = data[i];
+                        break;
+                    }
+                }
+            }
+        } else {
+            link = link.parentNode;
+            for (let i = 0; i < data.length; i++) {
+                if (link.attributes.id.value === data[i].id) {
+                    chosenMovie = data[i];
+                    break;
+                }
+            }
         }
-    }
+        if (!clickLink.attributes.id || clickLink.attributes.id && clickLink.attributes.id.value !== 'second-container') {
+            changeMovie(chosenMovie);
+        }
+    };
 }
 
-function changeMovie(arr, i, lastChosenMovie, moviesData) {
-    let newMovie = [];
+function changeMovie(newMovie) {
     links = getLinks();
-    for (let j = 0; j < arr.length; j++) {
-        if (arr[i].textContent.trim() === moviesData[j].title) {
-            newMovie = moviesData[j];
-            break;
-        }
-    }
-    if (newMovie !== lastChosenMovie) {
-        lastChosenMovie = newMovie;
-        setMovie(lastChosenMovie);
+    if (newMovie !== chosenMovie) {
+        chosenMovie = newMovie;
+        setMovie(chosenMovie);
         links.videoTag.play();
     } else {
-        setMovie(lastChosenMovie);
+        setMovie(chosenMovie);
         links.videoTag.load();
         links.videoTag.play();
     }
 }
 
-
 function setMovies(data) {
     chosenMovie = data[0];
-    let template = document.querySelector('#movies');
     setMovie(chosenMovie);
-    setMoviesBlocks(template, data);
+    setMoviesBlocks(data);
 }
 
 function onLoad() {
     getMoviesData('../data.json').then((data) => {
-            setMovies(data);
-        });
+        setMovies(data);
+    });
 }
 
