@@ -3,22 +3,6 @@ import '../styles/main.scss'
 
 window.addEventListener('load', onLoad);
 
-let chosenMovie;
-let data = [];
-let links;
-
-function setData(someData) {
-    for (let i = 0; i < someData.length; i++) {
-        someData[i].id = 'item' + i;
-    }
-    data = someData;
-}
-
-function getData() {
-    return data;
-}
-
-
 function getMoviesData(url) {
     return new Promise(function (resolve, reject) {
         let linkData = new XMLHttpRequest();
@@ -26,9 +10,11 @@ function getMoviesData(url) {
         linkData.onreadystatechange = function () {
             if (linkData.readyState === 4) {
                 if (linkData.status === 200) {
-                    setData(JSON.parse(linkData.responseText));
-                    data = getData();
-                    resolve(data);
+                    let someData = JSON.parse(linkData.responseText);
+                    for (let i = 0; i < someData.length; i++) {
+                        someData[i].id = 'item' + i;
+                    }
+                    resolve(someData);
                 } else reject('error');
             }
         };
@@ -42,12 +28,15 @@ function getLinks() {
     let chosenDescription = document.querySelector('#chosenDescription');
     let chosenSource = document.querySelector('#source');
     let videoTag = document.querySelector('#video');
+    let currentIdLink = document.querySelector('#video_wrap');
+    currentIdLink = currentIdLink.parentNode;
 
-    return {chosenTitle, chosenDirector, chosenDescription, chosenSource, videoTag};
+    return {chosenTitle, chosenDirector, chosenDescription, chosenSource, videoTag, currentIdLink};
 }
 
 function setMovie(movie) {
-    links = getLinks();
+    let links = getLinks();
+    links.currentIdLink.setAttribute('id', movie.id);
     if (typeof(movie.video) !== 'object') {
         links.chosenSource.setAttribute('src', 'src/' + movie.video);
     } else links.chosenSource.setAttribute('src', 'src/video/' + movie.video[0]);
@@ -71,57 +60,64 @@ function setMoviesBlocks(moviesData) {
         wrap.setAttribute('id', movieInfo.id);
         templateLink.parentNode.appendChild(clone);
     }
-    let videoChoice = document.querySelector('#second-container');
-    videoChoice.onclick = function () {
+}
+
+function getChosenMovie(targetLink, moviesArr) {
+    for (let i = 0; i < moviesArr.length; i++) {
+        if (targetLink.attributes.id.value === moviesArr[i].id) {
+            return moviesArr[i];
+        }
+    }
+}
+
+function onClick(data) {
         let link = event.target;
         let clickLink = event.target;
-        data = getData();
+        let chosenMovie;
         if (link.attributes.id) {
             if (link.attributes.id.value !== 'second-container') {
-                for (let i = 0; i < data.length; i++) {
-                    if (link.attributes.id.value === data[i].id) {
-                        chosenMovie = data[i];
-                        break;
-                    }
-                }
+                chosenMovie = getChosenMovie(link, data);
             }
         } else {
             link = link.parentNode;
-            for (let i = 0; i < data.length; i++) {
-                if (link.attributes.id.value === data[i].id) {
-                    chosenMovie = data[i];
-                    break;
-                }
-            }
+            chosenMovie = getChosenMovie(link, data);
         }
         if (!clickLink.attributes.id || clickLink.attributes.id && clickLink.attributes.id.value !== 'second-container') {
-            changeMovie(chosenMovie);
+            changeMovie(chosenMovie, data);
         }
-    };
 }
 
-function changeMovie(newMovie) {
-    links = getLinks();
-    if (newMovie !== chosenMovie) {
-        chosenMovie = newMovie;
-        setMovie(chosenMovie);
+function changeMovie(newMovie, data) {
+    let links = getLinks();
+    let lastMovie;
+    for (let i = 0; i < data.length; i++) {
+        if (links.currentIdLink.id === data[i].id) {
+            lastMovie = data[i];
+            break;
+        }
+    }
+    if (newMovie.id !== links.currentIdLink.id) {
+        setMovie(newMovie);
         links.videoTag.play();
     } else {
-        setMovie(chosenMovie);
+        setMovie(lastMovie);
         links.videoTag.load();
         links.videoTag.play();
     }
 }
 
 function setMovies(data) {
-    chosenMovie = data[0];
-    setMovie(chosenMovie);
+    setMovie(data[0]);
     setMoviesBlocks(data);
 }
 
 function onLoad() {
-    getMoviesData('../data.json').then((data) => {
+    let data;
+    getMoviesData('../data.json').then((_data) => {
+        data = _data;
         setMovies(data);
     });
+    let videoChoice = document.querySelector('#second-container');
+    videoChoice.addEventListener('click', function(){onClick(data)});
 }
 
