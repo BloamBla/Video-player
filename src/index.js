@@ -3,56 +3,121 @@ import '../styles/main.scss'
 
 window.addEventListener('load', onLoad);
 
-function onLoad() {
-    let data = require('../data.json');
-    let chosenMovie = data[0];
-    const videoTag = document.querySelector('#video');
-    const chosenSource = document.querySelector('#source');
-    const chosenTitle = document.querySelector('#chosenTitle');
-    const chosenDirector = document.querySelector('#chosenDirector');
-    const chosenDescription = document.querySelector('#chosenDescription');
-    const links = {chosenTitle, chosenDirector, chosenDescription, chosenSource};
+function getMoviesData(url) {
+    return new Promise(function (resolve, reject) {
+        let linkData = new XMLHttpRequest();
+        linkData.open('GET', url, true);
+        linkData.onreadystatechange = function () {
+            if (linkData.readyState === 4) {
+                if (linkData.status === 200) {
+                    let someData = JSON.parse(linkData.responseText);
+                    for (let i = 0; i < someData.length; i++) {
+                        someData[i].id = 'item' + i;
+                    }
+                    resolve(someData);
+                } else reject('error');
+            }
+        };
+        linkData.send();
+    });
+}
 
-    function setMovie(){
-        if (typeof(chosenMovie.video) !== 'object'){
-            links.chosenSource.setAttribute('src', 'src/' + chosenMovie.video);
-        } else links.chosenSource.setAttribute('src', 'src/video/' + chosenMovie.video[0]);
-        videoTag.setAttribute('poster', 'src/img/' + chosenMovie.preview);
-        videoTag.load();
-        links.chosenTitle.textContent = chosenMovie.title;
-        links.chosenDirector.textContent = chosenMovie.director;
-        links.chosenDescription.textContent = chosenMovie.description;
-    }
+function getLinks() {
+    let chosenTitle = document.querySelector('#chosenTitle');
+    let chosenDirector = document.querySelector('#chosenDirector');
+    let chosenDescription = document.querySelector('#chosenDescription');
+    let chosenSource = document.querySelector('#source');
+    let videoTag = document.querySelector('#video');
+    let currentIdLink = document.querySelector('#video_wrap');
+    currentIdLink = currentIdLink.parentNode;
 
-    setMovie();
+    return {chosenTitle, chosenDirector, chosenDescription, chosenSource, videoTag, currentIdLink};
+}
 
-    let template = document.querySelector('#movies');
-    for (let i = 0; i < data.length; i++) {
-        let movieInfo = data[i];
-        let clone = template.content.cloneNode(true);
+function setMovie(movie) {
+    let links = getLinks();
+    links.currentIdLink.setAttribute('id', movie.id);
+    if (typeof(movie.video) !== 'object') {
+        links.chosenSource.setAttribute('src', 'src/' + movie.video);
+    } else links.chosenSource.setAttribute('src', 'src/video/' + movie.video[0]);
+    links.videoTag.setAttribute('poster', 'src/img/' + movie.preview);
+    links.videoTag.load();
+    links.chosenTitle.textContent = movie.title;
+    links.chosenDirector.textContent = movie.director;
+    links.chosenDescription.textContent = movie.description;
+}
+
+function setMoviesBlocks(moviesData) {
+    let templateLink = document.querySelector('#movies');
+    for (let i = 0; i < moviesData.length; i++) {
+        let movieInfo = moviesData[i];
+        let clone = templateLink.content.cloneNode(true);
         let image = clone.querySelector('.template-item-back');
-        let title = clone.querySelector('p');
+        let title = clone.querySelector('h5');
+        let wrap = clone.querySelector('.template-item');
         title.textContent = movieInfo.title;
         image.setAttribute('style', 'background: url(src/img/' + movieInfo.preview + ') no-repeat center; background-size: contain;');
-        template.parentNode.appendChild(clone);
+        wrap.setAttribute('id', movieInfo.id);
+        templateLink.parentNode.appendChild(clone);
     }
+}
 
-    let videoChoise = document.querySelectorAll('.template-item');
-
-    for (let i = 0; i < videoChoise.length; i++) {
-        videoChoise[i].onclick = function () {
-            let newMovie = [];
-            for (let j = 0; j < videoChoise.length; j++) {
-                if (videoChoise[i].textContent.trim() === data[j].title) {
-                    newMovie = data[j];
-                }
-            }
-            if (newMovie !== chosenMovie) {
-                chosenMovie = newMovie;
-                setMovie();
-                video.play();
-            }
+function getChosenMovie(targetLink, moviesArr) {
+    for (let i = 0; i < moviesArr.length; i++) {
+        if (targetLink.attributes.id.value === moviesArr[i].id) {
+            return moviesArr[i];
         }
     }
+}
+
+function onClick(data) {
+        let link = event.target;
+        let clickLink = event.target;
+        let chosenMovie;
+        if (link.attributes.id) {
+            if (link.attributes.id.value !== 'second-container') {
+                chosenMovie = getChosenMovie(link, data);
+            }
+        } else {
+            link = link.parentNode;
+            chosenMovie = getChosenMovie(link, data);
+        }
+        if (!clickLink.attributes.id || clickLink.attributes.id && clickLink.attributes.id.value !== 'second-container') {
+            changeMovie(chosenMovie, data);
+        }
+}
+
+function changeMovie(newMovie, data) {
+    let links = getLinks();
+    let lastMovie;
+    for (let i = 0; i < data.length; i++) {
+        if (links.currentIdLink.id === data[i].id) {
+            lastMovie = data[i];
+            break;
+        }
+    }
+    if (newMovie.id !== links.currentIdLink.id) {
+        setMovie(newMovie);
+        links.videoTag.play();
+    } else {
+        setMovie(lastMovie);
+        links.videoTag.load();
+        links.videoTag.play();
+    }
+}
+
+function setMovies(data) {
+    setMovie(data[0]);
+    setMoviesBlocks(data);
+}
+
+function onLoad() {
+    let data;
+    getMoviesData('../data.json').then((_data) => {
+        data = _data;
+        setMovies(data);
+    });
+    let videoChoice = document.querySelector('#second-container');
+    videoChoice.addEventListener('click', function(){onClick(data)});
 }
 
